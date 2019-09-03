@@ -2,7 +2,6 @@
 
 import os
 import matplotlib.pyplot as plt
-# gg
 import pickle
 import pandas as pd
 
