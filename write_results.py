@@ -64,11 +64,11 @@ def write_results(pop, dir_str,  test_results, members, list_of_best):
         f_out_configuration.write(str(test_results[i]))
 
         f_out_configuration.write("\n")
-        print(pop[i])
         f_out_configuration.write(str(pop[i]))
 
         f_out_configuration.write("\n\n")
     print(df_pop)
+    df_pop.to_excel(str(dir_str + '/xcel.xlsx'))
     f_out_configuration.close()
 
     # f_out_points.close()

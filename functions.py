@@ -2,6 +2,7 @@
 
 import numpy as np
 import csv
+import pandas as pd
 
 
 def find_index(values_cum_sum, alpha):
@@ -12,16 +13,12 @@ def find_index(values_cum_sum, alpha):
 
 
 def get_data_from_file(file_name):
-    with open(file_name, 'r') as f:
-        reader = csv.reader(f)
-        data = np.array(list(reader))
-    data_x = data[:, :len(data[0])-1]
-    data_y = data[:, len(data[0])-1]
-    return data_x, data_y
+    df = pd.read_csv(file_name)
+    return df
 
 
-def create_data_for_model(data_x_old, data_y_old, train_ratio, valid_ratio, test_ratio, members):
-    data_x, data_y = leave_only(data_x_old, data_y_old, members)
+def create_data_for_model(data_x_old, data_y_old, train_ratio, valid_ratio, test_ratio, members, df):
+    data_x, data_y, df = leave_only(data_x_old, data_y_old, members, df)
     length = len(data_y)
 
     train_x = data_x[:int(length*train_ratio)]
@@ -40,7 +37,8 @@ def create_data_for_model(data_x_old, data_y_old, train_ratio, valid_ratio, test
     return train_x, train_y, validation_x, validation_y, test_x, test_y
 
 
-def leave_only(data_x, data_y, members):
+def leave_only(data_x, data_y, members, df):
+    df = df.loc[df['y'].isin(members)]
     data_y = np.array(data_y).astype(np.float)
     index = [True if data_y[i] in members else False for i in range(len(data_y))]
     new_x = []
@@ -49,7 +47,7 @@ def leave_only(data_x, data_y, members):
         if index[i]:
             new_x.append(data_x[i])
             new_y.append(data_y[i])
-    return np.array(new_x), np.array(new_y)
+    return np.array(new_x), np.array(new_y), df
 
 
 def in_same_family(x, y):

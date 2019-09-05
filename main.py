@@ -11,10 +11,10 @@ if __name__ == "__main__":
     points_file_name = "./points/small_points_dim10"
     results_dir_str = "./results_svm_dim10/" + create_date_str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     os.mkdir(results_dir_str)
-    data_x, data_y = get_data_from_file(points_file_name)
+    data_x, data_y, df = get_data_from_file(points_file_name)
     dim = 10
     num_of_data_points = len(data_x[0])/(dim+1)
-    pop_size = 2
+    pop_size = 3
     num_of_iter = 2
     train_ratio = 0.25
     validation_ratio = 0.4
@@ -32,10 +32,10 @@ if __name__ == "__main__":
             members = random.sample(range(1, 25), i)
             train_x, train_y, validation_x, validation_y, test_x, test_y = \
                 create_data_for_model(data_x, data_y, train_ratio, validation_ratio,
-                                      test_ratio, members)
+                                      test_ratio, members, df)
             len_data = len(train_x)
 
-            pop, test_results, list_of_best_in_each_iter = iterate(pop_size, num_of_data_points, num_of_iter,
+            pop, test_results, test_results_family, list_of_best_in_each_iter = iterate(pop_size, num_of_data_points, num_of_iter,
                                                                    dim, mutation_min_alpha, mutation_delta, train_x,
                                                                    train_y, validation_x, validation_y, test_x, test_y)
 

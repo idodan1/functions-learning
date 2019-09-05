@@ -167,7 +167,7 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
     pop = create_pop(pop_size, configuration_space, len(train_y))
     for i in range(num_of_iter):
         if i % 10 == 0:
-          print("\titer = " + str(i))
+            print("\titer = " + str(i))
         results, results_family = calc_pop(pop, dim, train_x, train_y, val_x, val_y)
         results_cum_sum = create_cumsum(results)
 
@@ -199,12 +199,12 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         results = results[best_members_percent:]
         pop = pop.tolist()
         list_of_best_in_each_iter.append(results[-1])
-    test_results = calc_pop(pop, dim, train_x, train_y, test_x, test_y)
+    test_results, test_results_family = calc_pop(pop, dim, train_x, train_y, test_x, test_y)
     # sort
     idx = np.argsort(test_results)
     pop = np.array(pop)[idx]
     test_results = np.array(test_results)[idx]
-    return pop, test_results, list_of_best_in_each_iter
+    return pop, test_results, test_results_family, list_of_best_in_each_iter
 
 
 
