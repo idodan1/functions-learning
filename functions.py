@@ -13,8 +13,17 @@ def find_index(values_cum_sum, alpha):
 
 
 def get_data_from_file(file_name):
+    with open(file_name, 'r') as f:
+        reader = csv.reader(f)
+        data = np.array(list(reader))
+
     df = pd.read_csv(file_name)
-    return df
+    columns = list(range(df.shape[1] - 1))
+    columns.append("y")
+    df.columns = columns
+    data_x = data[:, :len(data[0])-1]
+    data_y = data[:, len(data[0])-1]
+    return data_x, data_y, df
 
 
 def create_data_for_model(data_x_old, data_y_old, train_ratio, valid_ratio, test_ratio, members, df):
