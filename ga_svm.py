@@ -1,34 +1,33 @@
 #!/usr/bin/env python3
 
-from create_svm import predict
+from create_svm import predict, create_configuration_space
 from functions import find_index
 import numpy as np
-import random
+import pandas as pd
 
 
-def create_pop(pop_size, configuration_space, len_data):
+def create_pop(pop_size, configuration_space):
     """
     creates a list of dictionaries, each dict is a configuration representing an svm model.
     """
-    pop = []
+    df_pop = pd.DataFrame(columns=configuration_space.keys())
     for i in range(pop_size):
-        member = {}
+        mem = []
         for key in configuration_space.keys():
             key_type = type(configuration_space[key][0])
             if key_type is str:
-                member[key] = configuration_space[key][np.random.randint(0, len(configuration_space[key]))]
+                mem.append(configuration_space[key][np.random.randint(0, len(configuration_space[key]))])
             elif key_type is float:
                 limits = configuration_space[key]
-                member[key] = float('%.2f' % np.random.uniform(limits[0], limits[1]))
+                mem.append(float('%.2f' % np.random.uniform(limits[0], limits[1])))
             elif key_type is int:
                 limits = configuration_space[key]
-                member[key] = int(np.random.randint(limits[0], limits[1]))
+                mem.append(int(np.random.randint(limits[0], limits[1])))
             else:
                 print("illegal type")
-        # a random order of points to create the model from
-        member["sample"] = random.sample(range(0, len_data), len_data)
-        pop.append(dict(member))
-    return pop
+
+        df_pop = df_pop.append(pd.DataFrame([mem], columns=configuration_space.keys()), ignore_index=True)
+    return df_pop
 
 
 def recombinant(x, y, f_x, f_y):
@@ -54,36 +53,10 @@ def recombinant(x, y, f_x, f_y):
 
         elif key_type is int:
             son[key] = int((x[key] * f_x / sum_square + y[key] * f_y / sum_square))
-    son["sample"] = add_sample(x["sample"], y["sample"])
     return son
 
 
-def add_sample(sample1, sample2):
-    """
-    creates a new points sample from parents sample lists
-    """
-    sample_list = []
-    used_list = [True] * len(sample1)
-    now_1 = True
-    i1 = 0
-    i2 = 0
-    while len(sample_list) < len(sample1):
-        if now_1:
-            if used_list[sample1[i1]]:
-                used_list[sample1[i1]] = False
-                sample_list.append(sample1[i1])
-            now_1 = False
-            i1 += 1
-        else:
-            if used_list[sample1[i2]]:
-                used_list[sample2[i2]] = False
-                sample_list.append(sample2[i2])
-            now_1 = True
-            i2 += 1
-    return sample_list
-
-
-def mutate(x, configuration_space, min_alpha, delta, len_data):
+def mutate(x, configuration_space, min_alpha, delta):
     mutation = {}
     for key in x.keys():
         key_type = type(x[key])
@@ -108,44 +81,7 @@ def mutate(x, configuration_space, min_alpha, delta, len_data):
             factor = np.random.randint(-2, 2)
             mutation[key] = int(max(min((x[key] + factor), configuration_space[key][1]), configuration_space[key][0]))
 
-    num_of_points = int(len_data * mutation["percent_of_points"])
-    mutation["sample"] = x["sample"]
-    if num_of_points < len_data:
-      for i in range(num_of_points):
-          alpha = np.random.uniform(0, 1)
-          if alpha > 0.9:
-              index = np.random.randint(num_of_points, len_data)
-              mutation["sample"][i], mutation["sample"][index] = mutation["sample"][index], mutation["sample"][i]
     return mutation
-
-
-def create_configuration_space(num_of_data_points):
-    configuration_space = dict()
-    configuration_space["kernel"] = ["rbf", "sigmoid"]
-    configuration_space["C"] = [0.001, 1000.0]
-    configuration_space["shrinking"] = ["true", "false"]
-    configuration_space["degree"] = [1, 5]
-    configuration_space["coef0"] = [0.0, 10.0]
-    configuration_space["gamma"] = ["auto", "value"]
-    configuration_space["gamma_value"] = [0.0001, 8.0]  # only if gamma is value
-    configuration_space["percent_of_points"] = [0.1, 1]
-    configuration_space["num_of_points"] = [1, num_of_data_points]
-    return configuration_space
-
-
-def calc_pop(pop, dim, train_x, train_y, val_x, val_y):
-    """
-    calculates the identification percentage for every member in pop
-    """
-    results = []
-    results_family = []
-    i = 1
-    for member in pop:
-        i += 1
-        res, res_family = predict(member, train_x, train_y, val_x, val_y, dim)
-        results.append(res)
-        results_family.append(res_family)
-    return results, results_family
 
 
 def create_cumsum(results):
@@ -158,54 +94,46 @@ def create_cumsum(results):
 
 
 def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, mutation_delta,
-            train_x, train_y, val_x, val_y, test_x, test_y):
+            df_train, df_valid, df_test):
     """
-    returns a list of the best members of the final population with their test values and their configuration.
+        returns a list of the best members of the final population with their test values and their configuration.
     """
     list_of_best_in_each_iter = []
     configuration_space = create_configuration_space(num_of_data_points)
-    pop = create_pop(pop_size, configuration_space, len(train_y))
+    df_pop = create_pop(pop_size, configuration_space)
     for i in range(num_of_iter):
-        if i % 10 == 0:
-            print("\titer = " + str(i))
-        results, results_family = calc_pop(pop, dim, train_x, train_y, val_x, val_y)
-        results_cum_sum = create_cumsum(results)
+        # if i % 10 == 0:
+        print("\titer = " + str(i))
+        # check how good is the model
+        df_pop = predict(df_pop[[key for key in configuration_space.keys()]], df_train, df_valid, dim)
+        # after the first iteration we need to remove results column
+        # before predict, that's why we need to do the for loop
+        results_cum_sum = create_cumsum(df_pop['results'].values)
 
-        new_pop = []
+        new_pop = pd.DataFrame(columns=configuration_space.keys())
         for j in range(pop_size):
             alpha = np.random.uniform(0, 1, 2)
             index1, index2 = find_index(results_cum_sum, alpha[0]), find_index(results_cum_sum, alpha[1])
-            son = recombinant(pop[index1], pop[index2], results[index1], results[index2])
-            son = mutate(son, configuration_space, mutation_min_alpha, mutation_delta, len(train_y))
-            new_pop.append(son)
+            son = recombinant(dict(zip(df_pop.columns.tolist(), df_pop[index1:index1+1].
+                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
+                              dict(zip(df_pop.columns.tolist(), df_pop[index2:index2+1].
+                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
+                              df_pop[index1:index1+1]['results'].values,
+                              df_pop[index2:index2+1]['results'].values)
+            son = mutate(son, configuration_space, mutation_min_alpha, mutation_delta)
+            new_pop = new_pop.append(pd.Series(list(son.values()), index=configuration_space.keys()), ignore_index=True)
 
-        new_results, new_results_family = calc_pop(new_pop, dim, train_x, train_y, val_x, val_y)
-        # sort
-        idx = np.argsort(results)
-        pop = np.array(pop)[idx]
-        results = np.array(results)[idx]
+        new_pop = predict(new_pop, df_train, df_valid, dim)
+        df_pop = df_pop.sort_values(by=['results'], ascending=False)
+
         # leaves only the 20% best members and add them to the new pop
-        best_members_percent = int(len(pop)*0.2)
-        pop = pop[len(pop) - best_members_percent:]
-        pop = np.append(pop, new_pop)
-        results = results[len(results) - best_members_percent:]
-        results = np.append(results, new_results)
+        df_pop = df_pop[0:int(len(df_pop)*0.2)]
+        df_pop = df_pop.append(new_pop, ignore_index=True)
+        df_pop = df_pop.sort_values(by=['results'], ascending=False)
+        df_pop = df_pop[0:pop_size]
+        list_of_best_in_each_iter.append(df_pop['results'].max())
+        print(df_pop['results'])
 
-        # sorts again with the new pop and leaves the best pop_size from pop
-        idx = np.argsort(results)
-        pop = np.array(pop)[idx]
-        results = np.array(results)[idx]
-        pop = pop[best_members_percent:]
-        results = results[best_members_percent:]
-        pop = pop.tolist()
-        list_of_best_in_each_iter.append(results[-1])
-    test_results, test_results_family = calc_pop(pop, dim, train_x, train_y, test_x, test_y)
-    # sort
-    idx = np.argsort(test_results)
-    pop = np.array(pop)[idx]
-    test_results = np.array(test_results)[idx]
-    return pop, test_results, test_results_family, list_of_best_in_each_iter
-
-
-
-
+    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_test, dim)
+    df_pop = df_pop.sort_values(by=['results'], ascending=False)
+    return df_pop, list_of_best_in_each_iter
