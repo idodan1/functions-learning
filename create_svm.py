@@ -51,7 +51,7 @@ def svm_from_cfg(cfg_with_extra_features):
     return clf
 
 
-def predict_svm(df_pop, df_train, df_valid, df_test, dim, in_training=False):
+def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=False):
     """
         creates and validates/test an svm model
         returns the percentage of successful predictions on validation/test data.
@@ -82,7 +82,7 @@ def predict_svm(df_pop, df_train, df_valid, df_test, dim, in_training=False):
         for i in range(len(prediction)):
             if prediction[i] == test_y[i]:
                 counter += 1
-            elif in_same_family(prediction[i], test_y[i]):
+            elif in_same_family(prediction[i], test_y[i], members):
                 family_counter += 1
         results.append(counter*100/length)
         results_family.append((counter+family_counter)*100/length)

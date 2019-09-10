@@ -23,7 +23,7 @@ def create_configuration_space_net(num_of_data_points, max_layers=10, max_neuron
     configuration_space["num_of_layers"] = [2, max_layers]
     configuration_space["percent_of_points"] = [0.1, 1.0]
     configuration_space["learning_rate"] = [0.001, 1]
-    configuration_space["num_of_points"] = [1, num_of_data_points]
+    configuration_space["num_of_points"] = [num_of_data_points-10, num_of_data_points]
     configuration_space["optimizer"] = ["adam", "sgd", "adadelta"]
     configuration_space["epochs"] = [2, 5]
     for i in range(max_layers):
@@ -98,7 +98,7 @@ def fit_model(model, x_train, y_train_oh, x_valid, y_valid_oh, epochs):
     return accuracy, val_accuracy
 
 
-def predict_net(df_pop, df_train, df_valid, df_test, dim, in_training=False):
+def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=False):
     """
     in this function we create a model from configuration, train it and test it on the test data.
     It should be considered to use the accuracy value that fit_model returns which is not used at the moment
@@ -143,7 +143,7 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, in_training=False):
             for i in range(len(test_y)):
                 if test_y[i] == (prediction[i] + 1):  # need to add one because prediction starts from 0
                     counter_correct += 1
-                elif in_same_family(int(test_y[i]), int(prediction[i]+1)):
+                elif in_same_family(int(test_y[i]), int(prediction[i]+1), members):
                     counter_same_family += 1
             results.append(counter_correct * 100 / length)
             results_family.append((counter_correct + counter_same_family) * 100 / length)

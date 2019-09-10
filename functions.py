@@ -47,7 +47,9 @@ def leave_only(members, df):
     return df
 
 
-def in_same_family(x, y):
+def in_same_family(x_before, y_before, members):
+    x = members[x_before-1]
+    y = members[y_before-1]
     if x <= 5 and y <= 5:
         return True
     elif 9 >= x >= 6 and 9 >= y >= 6:

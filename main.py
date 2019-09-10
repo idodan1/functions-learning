@@ -20,8 +20,8 @@ if __name__ == "__main__":
     df = get_data_from_file([str('./points/' + file_name) for file_name in dir_list])
     dim = 10
     num_of_data_points = int(df.shape[1]/(dim+1))
-    pop_size = 10
-    num_of_iter = 10
+    pop_size = 2
+    num_of_iter = 2
     train_ratio = 0.5
     validation_ratio = 0.7
     test_ratio = 1
@@ -34,10 +34,11 @@ if __name__ == "__main__":
     results_df = pd.DataFrame(columns=['algorithm', 'group size', 'members', 'best result', 'best result family'])
     
     for k in range(1):
-        for i in range(5, 6):
+        for i in range(3, 4):
             print("group size equals " + str(i))
             for j in range(1):
                 members = random.sample(range(1, 25), i)
+                print(members)
                 df_train, df_valid, df_test = create_data_for_model(train_ratio, validation_ratio,
                                                                     test_ratio, members, df)
                 len_data = df.shape[0]  # num of rows in df
@@ -47,7 +48,8 @@ if __name__ == "__main__":
                 """
                 df_pop, list_of_best_in_each_iter = iterate(pop_size, num_of_data_points, num_of_iter, dim,
                                                             mutation_min_alpha,mutation_delta, df_train, df_valid,
-                                                            df_test, create_configuration_space_net, predict_net)
+                                                            df_test, create_configuration_space_net, predict_net,
+                                                            members)
 
                 results_df = results_df.append(pd.DataFrame([['NN', i, str(members), df_pop['results'].max(),
                                                               df_pop['results_family'].max()]],

@@ -94,7 +94,7 @@ def create_cumsum(results):
 
 
 def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, mutation_delta,
-            df_train, df_valid, df_test, create_configuration_space, predict):
+            df_train, df_valid, df_test, create_configuration_space, predict, members):
     """
         returns a list of the best members of the final population with their test values and their configuration.
     """
@@ -106,7 +106,7 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         print("\titer = " + str(i))
         # check how good is the model
         df_pop = predict(df_pop[[key for key in configuration_space.keys()]], df_train, df_valid, df_test,
-                         dim, in_training=True)
+                         dim, members, in_training=True)
         # after the first iteration we need to remove results column
         # before predict, that's why we need to do the for loop
         results_cum_sum = create_cumsum(df_pop['results'].values)
@@ -126,7 +126,7 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
             list_for_append = [son[key] for key in configuration_space.keys()]
             new_pop = new_pop.append(pd.Series(list(list_for_append), index=configuration_space.keys()), ignore_index=True)
 
-        new_pop = predict(new_pop, df_train, df_valid, df_test, dim, in_training=True)
+        new_pop = predict(new_pop, df_train, df_valid, df_test, dim, members, in_training=True)
         df_pop = df_pop.sort_values(by=['results'], ascending=False)
 
         # leaves only the 20% best members and add them to the new pop
@@ -135,8 +135,7 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         df_pop = df_pop.sort_values(by=['results'], ascending=False)
         df_pop = df_pop[0:pop_size]
         list_of_best_in_each_iter.append(df_pop['results'].max())
-        print(df_pop['results'])
 
-    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim)
+    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim, members)
     df_pop = df_pop.sort_values(by=['results'], ascending=False)
     return df_pop, list_of_best_in_each_iter
