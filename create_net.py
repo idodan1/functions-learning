@@ -40,7 +40,7 @@ def reset_tf_session():
     if curr_session is not None:
         curr_session.close()
     # reset graph
-    K.clear_session()
+    K.clear_session() 
     # create new session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -56,18 +56,18 @@ def build_model(configuration, num_of_functions, feature_len):  # feature_len = 
     s = reset_tf_session()
 
     model = Sequential()  # it is a feed-forward network without loops like in RNN
-    model.add(Dense(configuration['layer0 num of neuron'] * 10, input_shape=(feature_len,)))
+    model.add(Dense(int(configuration['layer0 num of neuron'] * 10), input_shape=(int(feature_len),)))
     # the first layer must specify the input shape (replacing placeholders)
     try:
         model.add(Activation(configuration['layer0 activation']))
     except:
         model.add(Activation("sigmoid"))
-    for i in range(1, configuration["num_of_layers"]):
+    for i in range(1, int(configuration["num_of_layers"])):
         try:
             model.add(Dense(configuration['layer'+str(i)+' num of neuron']*10,
                             activation=configuration['layer'+str(i)+' activation']))
         except:
-            model.add(Dense(configuration[str('layer'+str(i)+' num of neuron')]*10,
+            model.add(Dense(int(configuration[str('layer'+str(i)+' num of neuron')]*10),
                             activation="sigmoid"))
 
     model.add(Dense(num_of_functions))  # num of different functions
@@ -88,7 +88,7 @@ def fit_model(model, x_train, y_train_oh, x_valid, y_valid_oh, epochs):
         x_train,
         y_train_oh,
         batch_size=512,
-        epochs=epochs,
+        epochs=int(epochs),
         validation_data=(x_valid, y_valid_oh),
         verbose=0
     )
@@ -104,10 +104,15 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
     It should be considered to use the accuracy value that fit_model returns which is not used at the moment
     and maybe avoiding some calculations.
     """
+    """
     train_x = np.asmatrix(df_train.drop(columns=['y']).values)
     valid_x = np.asmatrix(df_valid.drop(columns=['y']).values)
     test_x = np.asmatrix(df_test.drop(columns=['y']).values)
-
+    """
+    train_x = np.asmatrix(df_train.drop(['y'], axis=1).values)
+    valid_x = np.asmatrix(df_valid.drop(['y'], axis=1).values)
+    test_x = np.asmatrix(df_test.drop(['y'], axis=1).values)
+    
     train_y = np.array(df_train['y'].values)
     valid_y = np.array(df_valid['y'].values)
     test_y = np.array(df_test['y'].values)
@@ -123,15 +128,21 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
 
     for j in range(len(df_pop)):
         cfg = dict(zip(df_pop.columns.tolist(), df_pop[j:j + 1].values.tolist()[0]))
+        """
         train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :dim * cfg["num_of_points"]]
         valid_x_cfg = valid_x[:, :dim * cfg["num_of_points"]]
         test_x_cfg = test_x[:, :dim * cfg["num_of_points"]]
+        """
+        
+        train_x_cfg = np.array(train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :int(dim * cfg["num_of_points"])])
+        valid_x_cfg = np.array(valid_x[:, :int(dim * cfg["num_of_points"])])
+        test_x_cfg = np.array(test_x[:, :int(dim * cfg["num_of_points"])])
 
         train_y_cfg = train_y[:int(len(train_y) * float(cfg["percent_of_points"]))]
         train_y_cfg_oh = keras.utils.to_categorical(train_y_cfg, num_of_functions+1)
         train_y_cfg_oh = train_y_cfg_oh[:, 1:]
-
-        feature_len = train_x_cfg[0].shape[1]
+        
+        feature_len = train_x_cfg[0].shape[0]
         model = build_model(cfg, num_of_functions, feature_len)
         acc, val_acc = fit_model(model, train_x_cfg, train_y_cfg_oh, valid_x_cfg, valid_y_oh, cfg["epochs"])
         if in_training:

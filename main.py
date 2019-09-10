@@ -27,7 +27,7 @@ if __name__ == "__main__":
     test_ratio = 1
     mutation_min_alpha = 0.2
     mutation_delta = 0.1
-    parameter_string = make_parameter_string(pop_size, num_of_iter, train_ratio, validation_ratio, test_ratio)
+    parameter_string = make_parameter_string(pop_size, num_of_iter, train_ratio, validation_ratio, test_ratio, len(df))
     f = open(results_dir_str + "/parameters", "w")
     f.write(parameter_string)
     f.close()

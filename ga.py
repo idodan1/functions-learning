@@ -116,9 +116,9 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
             alpha = np.random.uniform(0, 1, 2)
             index1, index2 = find_index(results_cum_sum, alpha[0]), find_index(results_cum_sum, alpha[1])
             son = recombinant(dict(zip(df_pop.columns.tolist(), df_pop[index1:index1+1].
-                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
+                                       drop(['results', 'results_family'], axis=1).values.tolist()[0])),
                               dict(zip(df_pop.columns.tolist(), df_pop[index2:index2+1].
-                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
+                                       drop(['results', 'results_family'], axis=1).values.tolist()[0])),
                               df_pop[index1:index1+1]['results'].values,
                               df_pop[index2:index2+1]['results'].values)
             son = mutate(son, configuration_space, mutation_min_alpha, mutation_delta)
@@ -136,6 +136,6 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         df_pop = df_pop[0:pop_size]
         list_of_best_in_each_iter.append(df_pop['results'].max())
 
-    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim, members)
+    df_pop = predict(df_pop.drop(['results', 'results_family'], axis=1), df_train, df_valid, df_test, dim, members)
     df_pop = df_pop.sort_values(by=['results'], ascending=False)
     return df_pop, list_of_best_in_each_iter

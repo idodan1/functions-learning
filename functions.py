@@ -17,7 +17,8 @@ def get_data_from_file(file_name):
     columns = list(range(df.shape[1] - 1))
     columns.append("y")
     df.columns = columns
-    for i in range(1, len(file_name)):
+    #for i in range(1, len(file_name)):
+    for i in range(1, 10):
         try:
             temp = pd.read_csv(file_name[i])
             temp.columns = columns
