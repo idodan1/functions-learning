@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from create_svm import predict, create_configuration_space
 from functions import find_index
 import numpy as np
 import pandas as pd
@@ -80,6 +79,7 @@ def mutate(x, configuration_space, min_alpha, delta):
         elif key_type is int:
             factor = np.random.randint(-2, 2)
             mutation[key] = int(max(min((x[key] + factor), configuration_space[key][1]), configuration_space[key][0]))
+    #         min/max is for staying in configuration space boundaries
 
     return mutation
 
@@ -94,7 +94,7 @@ def create_cumsum(results):
 
 
 def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, mutation_delta,
-            df_train, df_valid, df_test):
+            df_train, df_valid, df_test, create_configuration_space, predict):
     """
         returns a list of the best members of the final population with their test values and their configuration.
     """
@@ -105,7 +105,8 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         # if i % 10 == 0:
         print("\titer = " + str(i))
         # check how good is the model
-        df_pop = predict(df_pop[[key for key in configuration_space.keys()]], df_train, df_valid, dim)
+        df_pop = predict(df_pop[[key for key in configuration_space.keys()]], df_train, df_valid, df_test,
+                         dim, in_training=True)
         # after the first iteration we need to remove results column
         # before predict, that's why we need to do the for loop
         results_cum_sum = create_cumsum(df_pop['results'].values)
@@ -121,9 +122,11 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
                               df_pop[index1:index1+1]['results'].values,
                               df_pop[index2:index2+1]['results'].values)
             son = mutate(son, configuration_space, mutation_min_alpha, mutation_delta)
-            new_pop = new_pop.append(pd.Series(list(son.values()), index=configuration_space.keys()), ignore_index=True)
+            # needed because dict values get mixed and we need them in the same order as configuration_space.keys
+            list_for_append = [son[key] for key in configuration_space.keys()]
+            new_pop = new_pop.append(pd.Series(list(list_for_append), index=configuration_space.keys()), ignore_index=True)
 
-        new_pop = predict(new_pop, df_train, df_valid, dim)
+        new_pop = predict(new_pop, df_train, df_valid, df_test, dim, in_training=True)
         df_pop = df_pop.sort_values(by=['results'], ascending=False)
 
         # leaves only the 20% best members and add them to the new pop
@@ -134,6 +137,6 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         list_of_best_in_each_iter.append(df_pop['results'].max())
         print(df_pop['results'])
 
-    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_test, dim)
+    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim)
     df_pop = df_pop.sort_values(by=['results'], ascending=False)
     return df_pop, list_of_best_in_each_iter

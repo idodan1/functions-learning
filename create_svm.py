@@ -6,7 +6,7 @@ from sklearn import svm
 from functions import in_same_family
 
 
-def create_configuration_space(num_of_data_points):
+def create_configuration_space_svm(num_of_data_points):
     configuration_space = dict()
     configuration_space["kernel"] = ["rbf", "sigmoid"]
     configuration_space["C"] = [0.001, 1000.0]
@@ -16,7 +16,7 @@ def create_configuration_space(num_of_data_points):
     configuration_space["gamma"] = ["auto", "value"]
     configuration_space["gamma_value"] = [0.0001, 8.0]  # only if gamma is value
     configuration_space["percent_of_points"] = [0.5, 1]
-    configuration_space["num_of_points"] = [num_of_data_points-1, num_of_data_points]
+    configuration_space["num_of_points"] = [num_of_data_points-5, num_of_data_points]
     return configuration_space
 
 
@@ -51,14 +51,18 @@ def svm_from_cfg(cfg_with_extra_features):
     return clf
 
 
-def predict(df_pop, df_train, df_test, dim):
+def predict_svm(df_pop, df_train, df_valid, df_test, dim, in_training=False):
     """
         creates and validates/test an svm model
         returns the percentage of successful predictions on validation/test data.
         """
+    if in_training:
+        df_test_for_func = df_valid.copy()
+    else:
+        df_test_for_func = df_test
     train_x = np.asmatrix(df_train.drop(columns=['y']).values)
     train_y = np.array(df_train['y'].values)
-    test_y = np.array(df_test['y'].values)
+    test_y = np.array(df_test_for_func['y'].values)
     results = []
     results_family = []
     length = len(test_y)
@@ -67,7 +71,7 @@ def predict(df_pop, df_train, df_test, dim):
         cfg = dict(zip(df_pop.columns.tolist(), df_pop[j:j+1].values.tolist()[0]))
         train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :dim * cfg["num_of_points"]]
         train_y_cfg = train_y[:int(len(train_y) * float(cfg["percent_of_points"]))]
-        test_x = np.asmatrix(df_test.drop(columns=['y']).values)[:, :dim*cfg["num_of_points"]]
+        test_x = np.asmatrix(df_test_for_func.drop(columns=['y']).values)[:, :dim*cfg["num_of_points"]]
 
         clf = svm_from_cfg(cfg)
         clf.fit(train_x_cfg, train_y_cfg)

@@ -6,7 +6,7 @@ import pickle
 import pandas as pd
 
 
-def write_results(df_pop, dir_str, members, list_of_best_in_each_iter):
+def write_results(df_pop, dir_str, members, list_of_best_in_each_iter, algorithm_name):
 
     # save results in a folder. father_folder_name == group_size. if not exist, create it.
     dir_str = dir_str + "/group size = " + str(len(members))
@@ -15,12 +15,13 @@ def write_results(df_pop, dir_str, members, list_of_best_in_each_iter):
 
     # create a folder for the specific group of functions we are testing
     dir_str = dir_str + "/" + str(members)
-    os.mkdir(dir_str)
+    if not os.path.exists(dir_str):
+        os.mkdir(dir_str)
 
     df = pd.DataFrame(list_of_best_in_each_iter, columns=["right prediction"])
-    df.to_csv(str(dir_str + "/list_of_best.csv"))
+    df.to_csv(str(dir_str + "/list_of_best_"+algorithm_name+".csv"))
 
-    df_pop.to_excel(str(dir_str + '/xcel.xlsx'))
+    df_pop.to_excel(str(dir_str + '/'+algorithm_name+'.xlsx'))
 
 
 def make_parameter_string(pop_size, num_of_iter, train_ratio, validation_ratio, test_ratio):

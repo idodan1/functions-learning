@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from ga_svm import iterate
+from ga import iterate
 from functions import get_data_from_file, create_data_for_model
 from write_results import create_date_str, write_results, make_parameter_string
 import os

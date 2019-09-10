@@ -30,6 +30,9 @@ def get_data_from_file(file_name):
 def create_data_for_model(train_ratio, validation_ratio, test_ratio, members, df):
     df = leave_only(members, df)
     df = df.apply(pd.to_numeric)
+    #  we need to change the data_y to contain sequential members for one hot vectors
+    change_members = range(1, len(members)+1)
+    df['y'] = [change_members[members.index(number)] for number in df['y'].values]
     length = df.shape[0]  # num of rows in df
 
     df_train = df[0:int(length*train_ratio)]
