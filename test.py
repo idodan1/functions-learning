@@ -9,6 +9,7 @@ import os
 import random
 import datetime
 import pandas as pd
+x=5
 
 if __name__ == "__main__":
     results_dir_str = "./results_dim10/" + create_date_str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
