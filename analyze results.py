@@ -1,11 +1,19 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import shutil
 
 
 def show_parameters(dir_name):
     df = pd.read_excel(str(dir_name + '/parameters.xlsx'))
     print(df.to_string())
+    
+    
+def delete_empty_dirs(dir_name, dir_list):
+    for d in dir_list:
+        n = dir_name + '/' + d
+        if len(os.listdir(n)) < 2:
+            shutil.rmtree(n)
 
 
 def analyze_points_distribution(dir_name):
