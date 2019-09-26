@@ -94,7 +94,7 @@ def create_cumsum(results):
 
 
 def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, mutation_delta,
-            df_train, df_valid, df_test, create_configuration_space, predict, members):
+            df_train, df_valid, df_test, create_configuration_space, predict, members, wrong_predictions_df):
     """
         returns a list of the best members of the final population with their test values and their configuration.
     """
@@ -136,6 +136,7 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         df_pop = df_pop[0:pop_size]
         list_of_best_in_each_iter.append(df_pop['results'].max())
 
-    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim, members)
+    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim, members,
+                     in_training=False, wrong_predictions_df=wrong_predictions_df)
     df_pop = df_pop.sort_values(by=['results'], ascending=False)
     return df_pop, list_of_best_in_each_iter

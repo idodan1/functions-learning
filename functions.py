@@ -11,13 +11,14 @@ def find_index(values_cum_sum, alpha):
     return index
 
 
-def get_data_from_file(file_name):
+def get_data_from_file(file_name, num_of_files_for_data):
     shuffle(file_name)  # every time we will get different points
     df = pd.read_csv(file_name[0])
     columns = list(range(df.shape[1] - 1))
     columns.append("y")
     df.columns = columns
-    for i in range(1, len(file_name)):
+    # for i in range(1, len(file_name)):
+    for i in range(1, num_of_files_for_data):
         try:
             temp = pd.read_csv(file_name[i])
             temp.columns = columns
@@ -62,6 +63,19 @@ def in_same_family(x_before, y_before, members):
         return True
     return False
 
+
+def add_prediction(wrong_predictions_df, function_num, wrong_prediction, wrong=False):
+    if wrong:
+        wrong_predictions_df.at[str(function_num), 'wrong_prediction'] = wrong_predictions_df.loc[
+                                                                             str(function_num), [
+                                                                                 'wrong_prediction']].values[0] + 1.0
+        wrong_predictions_df.at[str(function_num), wrong_prediction] = wrong_predictions_df.loc[
+                                                                       str(function_num), [
+                                                                           wrong_prediction]].values[0] + 1.0
+    else:
+        wrong_predictions_df.at[str(function_num), 'right_prediction'] = wrong_predictions_df.loc[
+                                                                             str(function_num), [
+                                                                                 'right_prediction']].values[0] + 1.0
 
 
 

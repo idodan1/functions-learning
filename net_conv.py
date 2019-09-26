@@ -1,64 +1,26 @@
-# !/usr/bin/env python
-
 import numpy as np
 import os
 import tensorflow as tf
 import keras
 from keras import backend as K
-from keras.layers import Dense, Activation, Conv2D, Flatten
+from keras.layers import Dense, Activation
 from keras.models import Sequential
-import logging
-import warnings
-import sys
+from keras.models import Model
+from keras.layers import Conv1D, Dense, MaxPool1D, Flatten, Input
 from functions import in_same_family, add_prediction
-warnings.filterwarnings("ignore")
-logging.getLogger("tensorflow").setLevel(logging.WARNING)
-tf.logging.set_verbosity(tf.logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-sys.path.append("../..")
+from create_net import reset_tf_session, fit_model
 
 
-def create_configuration_space_net(num_of_data_points, max_layers=10, max_neuron_in_layer=100):
-    configuration_space = dict()
-    configuration_space["num_of_layers"] = [2, max_layers]
-    configuration_space["percent_of_points"] = [0.1, 1.0]
-    configuration_space["learning_rate"] = [0.001, 1]
-    configuration_space["num_of_points"] = [num_of_data_points-10, num_of_data_points]
-    configuration_space["optimizer"] = ["adam", "sgd", "adadelta"]
-    configuration_space["epochs"] = [2, 5]
-    for i in range(max_layers):
-        configuration_space['layer'+str(i)+' num of neuron'] = [10, max_neuron_in_layer]
-        #  this will be multiplied by 10
-        configuration_space['layer'+str(i)+' activation'] = ["relu", "sigmoid", "elu", "selu"]
-    return configuration_space
-
-
-# this function is needed for later
-def reset_tf_session():
-    curr_session = tf.get_default_session()
-    # close current session
-    if curr_session is not None:
-        curr_session.close()
-    # reset graph
-    K.clear_session()
-    # create new session
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    s = tf.InteractiveSession(config=config)
-    K.set_session(s)
-    return s
-
-
-def build_model(configuration, num_of_functions, feature_len):  # feature_len = len(x_train[0])
-    print(feature_len)
+def build_model_conv(configuration, num_of_functions, feature_len):  # feature_len = len(x_train[0])
     # we need to clear the graph
     tf.logging.set_verbosity(tf.logging.ERROR)
 
     s = reset_tf_session()
 
     model = Sequential()  # it is a feed-forward network without loops like in RNN
-    model.add(Dense(configuration['layer0 num of neuron'] * 10, input_shape=(feature_len,)))
-    # the first layer must specify the input shape (replacing placeholders)
+    # model.add(Dense(configuration['layer0 num of neuron'] * 10, input_shape=(feature_len,)))
+    model.add(Conv1D(configuration['layer0 num of neuron'] * 10, 3, input_shape=(feature_len, 1), activation='relu'))
+    model.add(Flatten())
     try:
         model.add(Activation(configuration['layer0 activation']))
     except:
@@ -84,22 +46,7 @@ def build_model(configuration, num_of_functions, feature_len):  # feature_len = 
     return model
 
 
-def fit_model(model, x_train, y_train_oh, x_valid, y_valid_oh, epochs):
-    history = model.fit(
-        x_train,
-        y_train_oh,
-        batch_size=512,
-        epochs=epochs,
-        validation_data=(x_valid, y_valid_oh),
-        verbose=0
-    )
-
-    accuracy = history.history['acc']
-    val_accuracy = history.history['val_acc']
-    return accuracy, val_accuracy
-
-
-def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=False, wrong_predictions_df=None):
+def predict_net_conv(df_pop, df_train, df_valid, df_test, dim, members, in_training=False, wrong_predictions_df=None):
     """
     in this function we create a model from configuration, train it and test it on the test data.
     It should be considered to use the accuracy value that fit_model returns which is not used at the moment
@@ -108,6 +55,10 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
     train_x = np.asmatrix(df_train.drop(columns=['y']).values)
     valid_x = np.asmatrix(df_valid.drop(columns=['y']).values)
     test_x = np.asmatrix(df_test.drop(columns=['y']).values)
+
+    train_x = np.expand_dims(train_x, axis=2)
+    valid_x = np.expand_dims(valid_x, axis=2)
+    test_x = np.expand_dims(test_x, axis=2)
 
     train_y = np.array(df_train['y'].values)
     valid_y = np.array(df_valid['y'].values)
@@ -132,8 +83,8 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
         train_y_cfg_oh = keras.utils.to_categorical(train_y_cfg, num_of_functions+1)
         train_y_cfg_oh = train_y_cfg_oh[:, 1:]
 
-        feature_len = train_x_cfg[0].shape[1]
-        model = build_model(cfg, num_of_functions, feature_len)
+        feature_len = train_x_cfg[0].shape[0]
+        model = build_model_conv(cfg, num_of_functions, feature_len)
         acc, val_acc = fit_model(model, train_x_cfg, train_y_cfg_oh, valid_x_cfg, valid_y_oh, cfg["epochs"])
         if in_training:
             results.append(val_acc[-1] * 100)
@@ -156,3 +107,4 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
         results_family = [0]*len(results)
     df_pop = df_pop.assign(results=results, results_family=results_family)
     return df_pop
+

@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn import svm
 
-from functions import in_same_family
+from functions import in_same_family, add_prediction
 
 
 def create_configuration_space_svm(num_of_data_points):
@@ -51,7 +51,7 @@ def svm_from_cfg(cfg_with_extra_features):
     return clf
 
 
-def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=False):
+def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=False, wrong_predictions_df=None):
     """
         creates and validates/test an svm model
         returns the percentage of successful predictions on validation/test data.
@@ -82,8 +82,13 @@ def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
         for i in range(len(prediction)):
             if prediction[i] == test_y[i]:
                 counter += 1
-            elif in_same_family(prediction[i], test_y[i], members):
-                family_counter += 1
+                if not in_training:
+                    add_prediction(wrong_predictions_df, int(test_y[i]), int(prediction[i]))
+            else:
+                if not in_training:
+                    add_prediction(wrong_predictions_df, int(test_y[i]), int(prediction[i]), wrong=True)
+                if in_same_family(prediction[i], test_y[i], members):
+                    family_counter += 1
         results.append(counter*100/length)
         results_family.append((counter+family_counter)*100/length)
     df_pop = df_pop.assign(results=results, results_family=results_family)

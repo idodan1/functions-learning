@@ -39,6 +39,14 @@ def make_parameter_string(pop_size, num_of_iter, train_ratio, validation_ratio, 
     return parameter_string
 
 
+def make_parameter_df(pop_size, num_of_iter, num_of_points, train_ratio, validation_ratio, test_ratio, num_of_files_for_data,
+                      num_of_data_points):
+    df = pd.DataFrame(data=[[pop_size, num_of_iter, num_of_points, train_ratio, validation_ratio, test_ratio, num_of_files_for_data,
+                            num_of_data_points]], columns=['pop size', 'num of iter', 'num_of_points', 'train ratio', ' validation ratio',
+                                                          'test ratio', 'num_of_files_for_data', 'num_of_data_points'])
+    return df
+
+
 def create_date_str(date):
 
     new_date = date[:4] + "." + date[4:6] + "." + date[6:8] + "-" + date[9:11] + "." + date[11:13] + "." + date[13:15]
