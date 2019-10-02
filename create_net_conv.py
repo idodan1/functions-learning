@@ -2,10 +2,8 @@ import numpy as np
 import os
 import tensorflow as tf
 import keras
-from keras import backend as K
 from keras.layers import Dense, Activation
 from keras.models import Sequential
-from keras.models import Model
 from keras.layers import Conv1D, Dense, MaxPool1D, Flatten, Input
 from functions import in_same_family, add_prediction
 from create_net import reset_tf_session, fit_model, create_configuration_space_net
