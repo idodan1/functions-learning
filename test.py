@@ -15,12 +15,12 @@ if __name__ == "__main__":
     results_dir_str = "./results_dim10/" + create_date_str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     os.mkdir(results_dir_str)
     dir_list = os.listdir('./points')
-    num_of_files_for_data = 1
+    num_of_files_for_data = 10
     df = get_data_from_file([str('./points/' + file_name) for file_name in dir_list], num_of_files_for_data)
     dim = 10
     num_of_data_points = int(df.shape[1]/(dim+1))
-    pop_size = 2
-    num_of_iter = 2
+    pop_size = 15
+    num_of_iter = 15
     train_ratio = 0.5
     validation_ratio = 0.7
     test_ratio = 1
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     wrong_predictions_df_svm.loc[:, :] = 0
 
     for k in range(1):
-        for i in range(4, 5, 2):
+        for i in range(24, 25, 2):
             print("group size equals " + str(i))
             members = random.sample(range(1, 25), i)
             df_train, df_valid, df_test = create_data_for_model(train_ratio, validation_ratio,
@@ -73,8 +73,8 @@ if __name__ == "__main__":
             results_df = results_df.append(pd.DataFrame([['CNN', i, str(members), df_pop['results'].max(),
                                                           df_pop['results_family'].max()]],
                                                         columns=results_df.columns), ignore_index=True)
-            print(results_df)
-            # write_results(df_pop, results_dir_str, members, list_of_best_in_each_iter, "CNN")
+            
+            write_results(df_pop, results_dir_str, members, list_of_best_in_each_iter, "CNN")
 
             """
             looks for the best model using svm
@@ -92,18 +92,19 @@ if __name__ == "__main__":
             #                                               df_pop['results_family'].max()]],
             #                                             columns=results_df.columns), ignore_index=True)
 
-    # results_df.to_excel(str(results_dir_str + '/results from all.xlsx'))
+    results_df.to_excel(str(results_dir_str + '/results from all.xlsx'))
     # wrong_predictions_df_net['right_percent'] = wrong_predictions_df_net['right_prediction'].values/\
     #                                         (wrong_predictions_df_net['right_prediction'].values
     #                                          + wrong_predictions_df_net['wrong_prediction'].values)
     # wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net.xlsx'))
 
     # results_df.to_excel(str(results_dir_str + '/results from all.xlsx'))
-    # wrong_predictions_df_net_conv['right_percent'] = wrong_predictions_df_net_conv['right_prediction'].values / \
-    #                                             (wrong_predictions_df_net_conv['right_prediction'].values
-    #                                              + wrong_predictions_df_net_conv['wrong_prediction'].values)
-    # wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net conv.xlsx'))
-
+    """
+    wrong_predictions_df_net_conv['right_percent'] = wrong_predictions_df_net_conv['right_prediction'].values / \
+                                                 (wrong_predictions_df_net_conv['right_prediction'].values
+                                                  + wrong_predictions_df_net_conv['wrong_prediction'].values)
+    wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net conv.xlsx'))
+"""
     # wrong_predictions_df_svm['right_percent'] = wrong_predictions_df_svm['right_prediction'].values / \
     #                                             (wrong_predictions_df_svm['right_prediction'].values
     #                                              + wrong_predictions_df_svm['wrong_prediction'].values)

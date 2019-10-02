@@ -12,7 +12,7 @@ def create_pop(pop_size, configuration_space):
     df_pop = pd.DataFrame(columns=configuration_space.keys())
     for i in range(pop_size):
         mem = []
-        print(configuration_space)
+        
         for key in configuration_space.keys():
             key_type = type(configuration_space[key][0])
             if key_type is str:
@@ -175,7 +175,6 @@ def find_in_history_dict(models_history_dict, df_pop):
         model_string = create_str(row, columns)
         if model_string in old_models:
             res = models_history_dict[create_str(row, columns)]
-            print(res)
             row['results'] = res[0]
             row['results_family'] = res[1]
             df_pop_old = df_pop_old.append(row, ignore_index=True)
