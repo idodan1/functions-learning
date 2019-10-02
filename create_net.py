@@ -11,6 +11,7 @@ import logging
 import warnings
 import sys
 from functions import in_same_family, add_prediction
+import pandas as pd
 warnings.filterwarnings("ignore")
 logging.getLogger("tensorflow").setLevel(logging.WARNING)
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -24,7 +25,7 @@ def create_configuration_space_net(num_of_data_points, max_layers=10, max_neuron
     configuration_space["percent_of_points"] = [0.1, 1.0]
     configuration_space["learning_rate"] = [0.001, 1]
     configuration_space["num_of_points"] = [num_of_data_points-10, num_of_data_points]
-    configuration_space["optimizer"] = ["adam", "sgd", "adadelta"]
+    # configuration_space["optimizer"] = ["adam", "sgd", "adadelta"]
     configuration_space["epochs"] = [2, 5]
     for i in range(max_layers):
         configuration_space['layer'+str(i)+' num of neuron'] = [10, max_neuron_in_layer]
@@ -50,22 +51,21 @@ def reset_tf_session():
 
 
 def build_model(configuration, num_of_functions, feature_len):  # feature_len = len(x_train[0])
-    print(feature_len)
     # we need to clear the graph
     tf.logging.set_verbosity(tf.logging.ERROR)
 
     s = reset_tf_session()
 
     model = Sequential()  # it is a feed-forward network without loops like in RNN
-    model.add(Dense(configuration['layer0 num of neuron'] * 10, input_shape=(feature_len,)))
+    model.add(Dense(int(configuration['layer0 num of neuron'] * 10), input_shape=(feature_len,)))
     # the first layer must specify the input shape (replacing placeholders)
     try:
         model.add(Activation(configuration['layer0 activation']))
     except:
         model.add(Activation("sigmoid"))
-    for i in range(1, configuration["num_of_layers"]):
+    for i in range(1, int(configuration["num_of_layers"])):
         try:
-            model.add(Dense(configuration['layer'+str(i)+' num of neuron']*10,
+            model.add(Dense(int(configuration['layer'+str(i)+' num of neuron']*10),
                             activation=configuration['layer'+str(i)+' activation']))
         except:
             model.add(Dense(configuration[str('layer'+str(i)+' num of neuron')]*10,
@@ -77,7 +77,7 @@ def build_model(configuration, num_of_functions, feature_len):  # feature_len = 
     # compile model
     model.compile(
         loss='categorical_crossentropy',  # this is our cross-entropy
-        optimizer=configuration["optimizer"],
+        optimizer='adam',
         metrics=['accuracy']  # report accuracy during training
     )
 
@@ -105,9 +105,9 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
     It should be considered to use the accuracy value that fit_model returns which is not used at the moment
     and maybe avoiding some calculations.
     """
-    train_x = np.asmatrix(df_train.drop(columns=['y']).values)
-    valid_x = np.asmatrix(df_valid.drop(columns=['y']).values)
-    test_x = np.asmatrix(df_test.drop(columns=['y']).values)
+    train_x = np.asmatrix(df_train.drop(['y'], axis=1).values)
+    valid_x = np.asmatrix(df_valid.drop(['y'], axis=1).values)
+    test_x = np.asmatrix(df_test.drop(['y'], axis=1).values)
 
     train_y = np.array(df_train['y'].values)
     valid_y = np.array(df_valid['y'].values)
@@ -124,9 +124,9 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
 
     for j in range(len(df_pop)):
         cfg = dict(zip(df_pop.columns.tolist(), df_pop[j:j + 1].values.tolist()[0]))
-        train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :dim * cfg["num_of_points"]]
-        valid_x_cfg = valid_x[:, :dim * cfg["num_of_points"]]
-        test_x_cfg = test_x[:, :dim * cfg["num_of_points"]]
+        train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :int(dim * cfg["num_of_points"])]
+        valid_x_cfg = valid_x[:, :int(dim * cfg["num_of_points"])]
+        test_x_cfg = test_x[:, :int(dim * cfg["num_of_points"])]
 
         train_y_cfg = train_y[:int(len(train_y) * float(cfg["percent_of_points"]))]
         train_y_cfg_oh = keras.utils.to_categorical(train_y_cfg, num_of_functions+1)
@@ -134,7 +134,7 @@ def predict_net(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
 
         feature_len = train_x_cfg[0].shape[1]
         model = build_model(cfg, num_of_functions, feature_len)
-        acc, val_acc = fit_model(model, train_x_cfg, train_y_cfg_oh, valid_x_cfg, valid_y_oh, cfg["epochs"])
+        acc, val_acc = fit_model(model, train_x_cfg, train_y_cfg_oh, valid_x_cfg, valid_y_oh, int(cfg["epochs"]))
         if in_training:
             results.append(val_acc[-1] * 100)
         else:

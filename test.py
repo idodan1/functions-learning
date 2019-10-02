@@ -3,9 +3,9 @@
 from ga import iterate
 from functions import get_data_from_file, create_data_for_model
 from create_net import create_configuration_space_net, predict_net
-from net_conv import predict_net_conv
+from create_net_conv import predict_net_conv, create_configuration_space_cnn
 from create_svm import create_configuration_space_svm, predict_svm
-from write_results import create_date_str, write_results, make_parameter_string, make_parameter_df
+from write_results import create_date_str, write_results, make_parameter_df
 import os
 import random
 import datetime
@@ -19,8 +19,8 @@ if __name__ == "__main__":
     df = get_data_from_file([str('./points/' + file_name) for file_name in dir_list], num_of_files_for_data)
     dim = 10
     num_of_data_points = int(df.shape[1]/(dim+1))
-    pop_size = 20
-    num_of_iter = 10
+    pop_size = 2
+    num_of_iter = 2
     train_ratio = 0.5
     validation_ratio = 0.7
     test_ratio = 1
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     wrong_predictions_df_svm.loc[:, :] = 0
 
     for k in range(1):
-        for i in range(24, 25, 2):
+        for i in range(4, 5, 2):
             print("group size equals " + str(i))
             members = random.sample(range(1, 25), i)
             df_train, df_valid, df_test = create_data_for_model(train_ratio, validation_ratio,
@@ -67,13 +67,14 @@ if __name__ == "__main__":
             """
             df_pop, list_of_best_in_each_iter = iterate(pop_size, num_of_data_points, num_of_iter, dim,
                                                         mutation_min_alpha, mutation_delta, df_train, df_valid,
-                                                        df_test, create_configuration_space_net, predict_net_conv,
+                                                        df_test, create_configuration_space_cnn, predict_net_conv,
                                                         members, wrong_predictions_df_net)
 
             results_df = results_df.append(pd.DataFrame([['CNN', i, str(members), df_pop['results'].max(),
                                                           df_pop['results_family'].max()]],
                                                         columns=results_df.columns), ignore_index=True)
-            write_results(df_pop, results_dir_str, members, list_of_best_in_each_iter, "CNN")
+            print(results_df)
+            # write_results(df_pop, results_dir_str, members, list_of_best_in_each_iter, "CNN")
 
             """
             looks for the best model using svm
@@ -85,7 +86,7 @@ if __name__ == "__main__":
             #                                             df_test[0:int(0.1*len(df_train))],
             #                                             create_configuration_space_svm, predict_svm, members,
             #                                             wrong_predictions_df_svm)
-            #
+
             # write_results(df_pop, results_dir_str, members, list_of_best_in_each_iter, 'SVM')
             # results_df = results_df.append(pd.DataFrame([['svm', i, str(members), df_pop['results'].max(),
             #                                               df_pop['results_family'].max()]],
@@ -97,11 +98,11 @@ if __name__ == "__main__":
     #                                          + wrong_predictions_df_net['wrong_prediction'].values)
     # wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net.xlsx'))
 
-    results_df.to_excel(str(results_dir_str + '/results from all.xlsx'))
-    wrong_predictions_df_net_conv['right_percent'] = wrong_predictions_df_net_conv['right_prediction'].values / \
-                                                (wrong_predictions_df_net_conv['right_prediction'].values
-                                                 + wrong_predictions_df_net_conv['wrong_prediction'].values)
-    wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net conv.xlsx'))
+    # results_df.to_excel(str(results_dir_str + '/results from all.xlsx'))
+    # wrong_predictions_df_net_conv['right_percent'] = wrong_predictions_df_net_conv['right_prediction'].values / \
+    #                                             (wrong_predictions_df_net_conv['right_prediction'].values
+    #                                              + wrong_predictions_df_net_conv['wrong_prediction'].values)
+    # wrong_predictions_df_net.to_excel(str(results_dir_str + '/wrong predictions net conv.xlsx'))
 
     # wrong_predictions_df_svm['right_percent'] = wrong_predictions_df_svm['right_prediction'].values / \
     #                                             (wrong_predictions_df_svm['right_prediction'].values

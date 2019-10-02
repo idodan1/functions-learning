@@ -60,7 +60,7 @@ def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
         df_test_for_func = df_valid.copy()
     else:
         df_test_for_func = df_test
-    train_x = np.asmatrix(df_train.drop(columns=['y']).values)
+    train_x = np.asmatrix(df_train.drop(['y'], axis=1).values)
     train_y = np.array(df_train['y'].values)
     test_y = np.array(df_test_for_func['y'].values)
     results = []
@@ -69,9 +69,9 @@ def predict_svm(df_pop, df_train, df_valid, df_test, dim, members, in_training=F
     for j in range(len(df_pop)):
         #  create dict from row for creating a svm model
         cfg = dict(zip(df_pop.columns.tolist(), df_pop[j:j+1].values.tolist()[0]))
-        train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :dim * cfg["num_of_points"]]
+        train_x_cfg = train_x[:int(len(train_x) * float(cfg["percent_of_points"])), :int(dim * cfg["num_of_points"])]
         train_y_cfg = train_y[:int(len(train_y) * float(cfg["percent_of_points"]))]
-        test_x = np.asmatrix(df_test_for_func.drop(columns=['y']).values)[:, :dim*cfg["num_of_points"]]
+        test_x = np.asmatrix(df_test_for_func.drop(['y'], axis=1).values)[:, :int(dim*cfg["num_of_points"])]
 
         clf = svm_from_cfg(cfg)
         clf.fit(train_x_cfg, train_y_cfg)

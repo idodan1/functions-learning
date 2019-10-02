@@ -12,6 +12,7 @@ def create_pop(pop_size, configuration_space):
     df_pop = pd.DataFrame(columns=configuration_space.keys())
     for i in range(pop_size):
         mem = []
+        print(configuration_space)
         for key in configuration_space.keys():
             key_type = type(configuration_space[key][0])
             if key_type is str:
@@ -98,27 +99,31 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
     """
         returns a list of the best members of the final population with their test values and their configuration.
     """
+    models_history_dict = {}
     list_of_best_in_each_iter = []
     configuration_space = create_configuration_space(num_of_data_points)
     df_pop = create_pop(pop_size, configuration_space)
     for i in range(num_of_iter):
         # if i % 10 == 0:
         print("\titer = " + str(i))
-        # check how good is the model
-        df_pop = predict(df_pop[[key for key in configuration_space.keys()]], df_train, df_valid, df_test,
-                         dim, members, in_training=True)
-        # after the first iteration we need to remove results column
-        # before predict, that's why we need to do the for loop
+        # returns a df of models we've already tested with their results (pop_old) and a df of new
+        # models (pop_new) that will be predicted
+        df_pop_old, df_pop_new = find_in_history_dict(models_history_dict,
+                                                      df_pop[[col for col in configuration_space.keys()]])
+        # the for loop here is because we need to remove results and results_family but they are not there
+        # in the first iter
+        df_pop_new = predict(df_pop_new, df_train, df_valid, df_test, dim, members, in_training=True)
+        df_pop = df_pop_old.append(df_pop_new, ignore_index=True)
+
+        add_to_dict(models_history_dict, df_pop)
         results_cum_sum = create_cumsum(df_pop['results'].values)
 
         new_pop = pd.DataFrame(columns=configuration_space.keys())
         for j in range(pop_size):
             alpha = np.random.uniform(0, 1, 2)
             index1, index2 = find_index(results_cum_sum, alpha[0]), find_index(results_cum_sum, alpha[1])
-            son = recombinant(dict(zip(df_pop.columns.tolist(), df_pop[index1:index1+1].
-                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
-                              dict(zip(df_pop.columns.tolist(), df_pop[index2:index2+1].
-                                       drop(columns=['results', 'results_family']).values.tolist()[0])),
+            son = recombinant(dict(zip(df_pop.columns.tolist(), df_pop[index1:index1+1].drop(['results', 'results_family'], axis=1).values.tolist()[0])),
+                              dict(zip(df_pop.columns.tolist(), df_pop[index2:index2+1].drop(['results', 'results_family'], axis=1).values.tolist()[0])),
                               df_pop[index1:index1+1]['results'].values,
                               df_pop[index2:index2+1]['results'].values)
             son = mutate(son, configuration_space, mutation_min_alpha, mutation_delta)
@@ -126,9 +131,11 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
             list_for_append = [son[key] for key in configuration_space.keys()]
             new_pop = new_pop.append(pd.Series(list(list_for_append), index=configuration_space.keys()), ignore_index=True)
 
-        new_pop = predict(new_pop, df_train, df_valid, df_test, dim, members, in_training=True)
-        df_pop = df_pop.sort_values(by=['results'], ascending=False)
+        new_pop_old, new_pop_new = find_in_history_dict(models_history_dict, new_pop)
+        new_pop_new = predict(new_pop_new, df_train, df_valid, df_test, dim, members, in_training=True)
+        new_pop = new_pop_old.append(new_pop_new, ignore_index=True)
 
+        df_pop = df_pop.sort_values(by=['results'], ascending=False)
         # leaves only the 20% best members and add them to the new pop
         df_pop = df_pop[0:int(len(df_pop)*0.2)]
         df_pop = df_pop.append(new_pop, ignore_index=True)
@@ -136,7 +143,44 @@ def iterate(pop_size, num_of_data_points, num_of_iter, dim, mutation_min_alpha, 
         df_pop = df_pop[0:pop_size]
         list_of_best_in_each_iter.append(df_pop['results'].max())
 
-    df_pop = predict(df_pop.drop(columns=['results', 'results_family']), df_train, df_valid, df_test, dim, members,
+    df_pop = predict(df_pop.drop(['results', 'results_family'], axis=1), df_train, df_valid, df_test, dim, members,
                      in_training=False, wrong_predictions_df=wrong_predictions_df)
     df_pop = df_pop.sort_values(by=['results'], ascending=False)
     return df_pop, list_of_best_in_each_iter
+
+
+def add_to_dict(models_history_dict, df_pop):
+    columns = list(df_pop.columns)
+    columns.remove('results')
+    columns.remove('results_family')
+    for index, row in df_pop.iterrows():
+        res = [row['results'], row['results_family']]
+        row = row.drop(['results', 'results_family'])
+        models_history_dict[create_str(row, columns)] = res
+
+
+def create_str(row, columns):
+    s = ''
+    for col in columns:
+        s += str(row[col]) + ','
+    return s
+
+
+def find_in_history_dict(models_history_dict, df_pop):
+    old_models = models_history_dict.keys()
+    columns = list(df_pop.columns)
+    df_pop_new = pd.DataFrame(columns=columns)
+    df_pop_old = pd.DataFrame(columns=columns+['results', 'results_family'])
+    for index, row in df_pop.iterrows():
+        model_string = create_str(row, columns)
+        if model_string in old_models:
+            res = models_history_dict[create_str(row, columns)]
+            print(res)
+            row['results'] = res[0]
+            row['results_family'] = res[1]
+            df_pop_old = df_pop_old.append(row, ignore_index=True)
+        else:
+            df_pop_new = df_pop_new.append(row, ignore_index=True)
+    return df_pop_old, df_pop_new
+
+
